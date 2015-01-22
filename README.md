@@ -11,7 +11,7 @@ a pure IntelliJ-CE with scala facet installed.
 
 To test the warning, you may need to create local.properties file in the project root with the pointer to sdk installation
 
-```sdk.dir=/opt/android-sdk-linux```
+`sdk.dir=/opt/android-sdk-linux`
 
 
 # Issue
