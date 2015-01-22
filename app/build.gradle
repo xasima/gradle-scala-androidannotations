@@ -23,9 +23,6 @@ buildscript {
 }
 
 // ----------- Plugins
-plugins {
-     id "com.jfrog.artifactory" version "3.0.1"     
-}
 apply plugin: 'idea'
 apply plugin: 'android'
 apply plugin: 'android-apt'
@@ -73,10 +70,6 @@ class Version {
 group = 'com.pangramia.enrollment'
 version = globalVersion
 status = version.status
- 
-// ----------- Artifacts identification and version
-group = 'com.pangramia.enrollment'
-version = 1
  
 
 // --------------- Android annotation plugin configuration
