@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dialog_button_default">#ffffff</color>
+    <color name="dialog_button_pressed">#dddddd</color>
+    <color name="pan_theme_color">#6828A9</color>
+</resources>

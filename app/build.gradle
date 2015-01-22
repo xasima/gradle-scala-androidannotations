@@ -1,0 +1,264 @@
+// ----------- Build script configuration
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url 'http://saturday06.github.io/gradle-android-scala-plugin/repository/snapshot' }
+        maven { url 'http://clinker.47deg.com/nexus/content/groups/public' }
+        maven { url 'http://oss.jfrog.org/artifactory/oss-snapshot-local' }
+        maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots"
+        }
+    }
+    dependencies {
+        // Android plugin
+        classpath 'com.android.tools.build:gradle:1.0.1'
+
+        // Android-apt plugin
+        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.4'
+        
+        // Scala
+        classpath "jp.leafytree.gradle:gradle-android-scala-plugin:1.3.1"
+
+    }
+}
+
+// ----------- Plugins
+plugins {
+     id "com.jfrog.artifactory" version "3.0.1"     
+}
+apply plugin: 'idea'
+apply plugin: 'android'
+apply plugin: 'android-apt'
+apply plugin: "jp.leafytree.android-scala"
+
+
+// ------------ Compilation repositories and build artifacts
+repositories {
+    mavenCentral()
+    jcenter()
+    maven {
+            url "https://oss.sonatype.org/content/repositories/snapshots"
+    }
+}
+
+
+
+// ----------- Artifacts  version functions
+import java.text.SimpleDateFormat
+def Properties versionProps = new Properties()
+versionProps.load(new FileInputStream(file('version.properties')))
+def globalVersion = new Version(versionProps['version'])
+
+
+
+class Version {
+    String thisVersion
+    String status
+
+    Version(String versionValue) {
+        thisVersion = versionValue
+        if (thisVersion.endsWith('-SNAPSHOT')) {
+            status = 'integration'
+        } else {
+            status = 'release'
+        }
+    }
+
+    String toString() {
+        thisVersion
+    }
+}
+
+// ----------- Artifacts identification and version
+group = 'com.pangramia.enrollment'
+version = globalVersion
+status = version.status
+ 
+// ----------- Artifacts identification and version
+group = 'com.pangramia.enrollment'
+version = 1
+ 
+
+// --------------- Android annotation plugin configuration
+apt {
+    arguments {
+        androidManifestFile variant.outputs[0].processResources.manifestFile
+        resourcePackageName "pan.enrollforecast.activity"
+    }
+}
+
+
+configurations {
+    published
+
+    // Exclude all transitive dependencies on slf4j, due to DEX error on
+    all*.exclude group: 'ch.qos.logback'
+    all*.exclude group: 'org.slf4j', module: 'jcl-over-slf4j'
+    all*.exclude group: 'org.slf4j', module: 'jul-to-slf4j'
+    all*.exclude group: 'org.slf4j', module: 'log4j-over-slf4j'
+    all*.exclude group: 'org.slf4j', module: 'jcl-over-slf4j'
+    all*.exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    all*.exclude group: 'org.slf4j', module: 'slf4j-simple'
+}
+
+
+
+// ----------- Android specific  configuration
+android {
+
+    // Prevent inclusion of the same library or resource file transitively
+    packagingOptions {
+        exclude 'BUILD'
+	exclude 'rootdoc.txt'
+    }
+
+    productFlavors {
+        // Define separate dev and prod product flavors.
+        dev {
+            // dev utilizes minSDKVersion = 21 to allow the Android gradle plugin
+            // to pre-dex each module and produce an APK that can be tested on
+            // Android Lollipop without time consuming dex merging processes.
+
+	    // Comment this due to having API 19 device, if using latest emulator or phone, change to appropriate
+            //minSdkVersion 21
+            minSdkVersion 19
+
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), file('proguard-rules.txt')
+        }
+        prod {
+            // The actual minSdkVersion for the application.
+            minSdkVersion 19
+
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), file('proguard-rules.txt')
+        }
+    }
+
+
+    compileSdkVersion 21
+    buildToolsVersion '21.1.1'
+    lintOptions {
+        abortOnError false
+    }
+
+    defaultConfig {
+        //minSdkVersion 15
+        targetSdkVersion 19
+
+        // Multidex 
+        multiDexEnabled true
+        testInstrumentationRunner "com.android.test.runner.MultiDexTestRunner"
+        
+        renderscriptSupportModeEnabled true
+
+        versionName versionProps['version']
+        versionCode versionProps['code'].toInteger()
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    dexOptions {
+        preDexLibraries false
+        javaMaxHeapSize "2g"
+    }
+
+   
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), file('proguard-rules.txt')
+        }
+        publicBeta.initWith(buildTypes.release)
+        publicBeta {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), file('proguard-rules.txt')
+        }
+        publicDebug.initWith(buildTypes.publicBeta)
+        publicDebug {
+            debuggable true
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), file('proguard-rules.txt')
+        }
+    }
+
+ 
+    sourceSets {
+        main {
+            manifest.srcFile 'src/main/AndroidManifest.xml'
+            java.srcDirs = ['src/main/java' /*'${project.buildDir}/source/apt_generated/release'*/] //FIX THIS
+            scala {
+                srcDir "src/main/scala"
+            }
+            resources.srcDirs = ['src/main/resources']
+            res.srcDirs = ['src/main/res']
+            assets.srcDirs = ['src/main/assets']
+        }
+ 
+        androidTest {
+            scala {
+                srcDir "src/androidTest/scala"
+            }
+        }
+    }
+
+    packagingOptions {
+        exclude 'META-INF/DEPENDENCIES.txt'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE.txt'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/notice.txt'
+        exclude 'META-INF/license.txt'
+        exclude 'META-INF/dependencies.txt'
+        exclude 'META-INF/LGPL2.1'
+    }
+}
+
+
+tasks.withType(ScalaCompile) {
+    scalaCompileOptions.deprecation = false
+    scalaCompileOptions.additionalParameters = ["-feature"]
+}   
+
+afterEvaluate {
+    tasks.matching {
+        it.name.startsWith('dex')
+    }.each { dx ->
+        if (dx.additionalParameters == null) {
+            dx.additionalParameters = []
+        }
+        dx.additionalParameters += '--multi-dex'
+        dx.additionalParameters += "--main-dex-list=$rootDir/main-dex-list.txt".toString()
+    }
+}
+
+def getSourceSetName(variant) {
+    return new File(variant.dirName).getName();
+}
+
+
+ 
+// --------------- Dependencies
+dependencies {
+    apt     "org.androidannotations:androidannotations:3.3-SNAPSHOT"
+    compile 'org.androidannotations:androidannotations-api:3.3-SNAPSHOT'
+
+    compile 'com.android.support:multidex:1.0.1'
+    androidTestCompile('com.android.support:multidex-instrumentation:1.0.1') {
+        // Should omit direct multidex dep, due to inclusion above and some issues in transitivity
+        exclude module: 'multidex'
+    }
+
+
+    compile "org.scala-lang:scala-library:2.11.5"
+    
+    compile 'com.android.support:appcompat-v7:19.1.+'
+    compile 'com.android.support:gridlayout-v7:19.1.+'
+    compile 'com.android.support:support-v4:19.1.+'
+   
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+}
+
